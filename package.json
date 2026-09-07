@@ -1,0 +1,13 @@
+{
+  "name": "nomandly-automacao",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Publicação diária automática no Instagram (@nomandly_) via Graph API + Cloudinary.",
+  "scripts": {
+    "publish": "node scripts/publish.js",
+    "build-queue": "node scripts/build_queue.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

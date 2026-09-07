@@ -1,0 +1,251 @@
+[
+  {
+    "id": "carousel-salvador",
+    "type": "carousel",
+    "caption": "Salvador tem dois roteiros: o que todo blog copia e o que quem mora aqui realmente segue.\n\nRoteiro completo de Salvador — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/01_salvador/slide_1.png",
+      "content/carrosseis/01_salvador/slide_2.png",
+      "content/carrosseis/01_salvador/slide_3.png",
+      "content/carrosseis/01_salvador/slide_4.png"
+    ]
+  },
+  {
+    "id": "carousel-recife",
+    "type": "carousel",
+    "caption": "Recife dá pra fazer inteiro num feriado — desde que você não perca meio dia decidindo por onde começar.\n\nRoteiro completo de Recife — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/02_recife/slide_1.png",
+      "content/carrosseis/02_recife/slide_2.png",
+      "content/carrosseis/02_recife/slide_3.png",
+      "content/carrosseis/02_recife/slide_4.png"
+    ]
+  },
+  {
+    "id": "carousel-fortaleza",
+    "type": "carousel",
+    "caption": "Fortaleza tem fama de cara, mas boa parte do melhor passeio é de graça — só precisa saber qual.\n\nRoteiro completo de Fortaleza — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/03_fortaleza/slide_1.png",
+      "content/carrosseis/03_fortaleza/slide_2.png",
+      "content/carrosseis/03_fortaleza/slide_3.png",
+      "content/carrosseis/03_fortaleza/slide_4.png"
+    ]
+  },
+  {
+    "id": "carousel-natal",
+    "type": "carousel",
+    "caption": "Em Natal, quem não sabe o preço certo do buggy paga o dobro.\n\nRoteiro completo de Natal — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/04_natal/slide_1.png",
+      "content/carrosseis/04_natal/slide_2.png",
+      "content/carrosseis/04_natal/slide_3.png",
+      "content/carrosseis/04_natal/slide_4.png"
+    ]
+  },
+  {
+    "id": "carousel-joaopessoa",
+    "type": "carousel",
+    "caption": "João Pessoa é o segredo mais bem guardado do Nordeste — verde, tranquila e única.\n\nRoteiro completo de João Pessoa — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/05_joaopessoa/slide_1.png",
+      "content/carrosseis/05_joaopessoa/slide_2.png",
+      "content/carrosseis/05_joaopessoa/slide_3.png",
+      "content/carrosseis/05_joaopessoa/slide_4.png"
+    ]
+  },
+  {
+    "id": "carousel-maceio",
+    "type": "carousel",
+    "caption": "Maceió só entrega o que promete se você for na maré certa.\n\nRoteiro completo de Maceió — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/06_maceio/slide_1.png",
+      "content/carrosseis/06_maceio/slide_2.png",
+      "content/carrosseis/06_maceio/slide_3.png",
+      "content/carrosseis/06_maceio/slide_4.png"
+    ]
+  },
+  {
+    "id": "carousel-aracaju",
+    "type": "carousel",
+    "caption": "Aracaju não está na lista de ninguém — e talvez seja exatamente por isso que vale a pena.\n\nRoteiro completo de Aracaju — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/07_aracaju/slide_1.png",
+      "content/carrosseis/07_aracaju/slide_2.png",
+      "content/carrosseis/07_aracaju/slide_3.png",
+      "content/carrosseis/07_aracaju/slide_4.png"
+    ]
+  },
+  {
+    "id": "carousel-saoluis",
+    "type": "carousel",
+    "caption": "São Luís tem azulejo português e som de reggae em quase toda esquina — e quase ninguém coloca no roteiro.\n\nRoteiro completo de São Luís — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/08_saoluis/slide_1.png",
+      "content/carrosseis/08_saoluis/slide_2.png",
+      "content/carrosseis/08_saoluis/slide_3.png",
+      "content/carrosseis/08_saoluis/slide_4.png"
+    ]
+  },
+  {
+    "id": "carousel-teresina",
+    "type": "carousel",
+    "caption": "Teresina não tem praia — tem o encontro de dois rios e um pôr do sol de tirar o fôlego.\n\nRoteiro completo de Teresina — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "files": [
+      "content/carrosseis/09_teresina/slide_1.png",
+      "content/carrosseis/09_teresina/slide_2.png",
+      "content/carrosseis/09_teresina/slide_3.png",
+      "content/carrosseis/09_teresina/slide_4.png"
+    ]
+  },
+  {
+    "id": "roteiro-personalizado-1",
+    "type": "carousel",
+    "caption": "Qualquer lugar do mundo, do seu jeito. Roteiro personalizado, pronto na hora, por R$49,90. Link na bio.\n\n#nomandly #roteiropersonalizado #viagem",
+    "files": [
+      "content/roteiro_personalizado/01_hero.png",
+      "content/roteiro_personalizado/02_como_funciona.png",
+      "content/roteiro_personalizado/03_qualquer_lugar.png",
+      "content/roteiro_personalizado/04_cta.png"
+    ]
+  },
+  {
+    "id": "reel-salvador",
+    "type": "reel",
+    "caption": "Salvador tem dois roteiros: o que todo blog copia e o que quem mora aqui realmente segue.\n\nRoteiro completo de Salvador — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/01_salvador.mp4",
+    "cover": "content/capas_reels/01_salvador_capa_reel.png"
+  },
+  {
+    "id": "reel-recife",
+    "type": "reel",
+    "caption": "Recife dá pra fazer inteiro num feriado — desde que você não perca meio dia decidindo por onde começar.\n\nRoteiro completo de Recife — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/02_recife.mp4",
+    "cover": "content/capas_reels/02_recife_capa_reel.png"
+  },
+  {
+    "id": "reel-fortaleza",
+    "type": "reel",
+    "caption": "Fortaleza tem fama de cara, mas boa parte do melhor passeio é de graça — só precisa saber qual.\n\nRoteiro completo de Fortaleza — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/03_fortaleza.mp4",
+    "cover": "content/capas_reels/03_fortaleza_capa_reel.png"
+  },
+  {
+    "id": "reel-natal",
+    "type": "reel",
+    "caption": "Em Natal, quem não sabe o preço certo do buggy paga o dobro.\n\nRoteiro completo de Natal — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/04_natal.mp4",
+    "cover": "content/capas_reels/04_natal_capa_reel.png"
+  },
+  {
+    "id": "reel-joaopessoa",
+    "type": "reel",
+    "caption": "João Pessoa é o segredo mais bem guardado do Nordeste — verde, tranquila e única.\n\nRoteiro completo de João Pessoa — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/05_joaopessoa.mp4",
+    "cover": "content/capas_reels/05_joaopessoa_capa_reel.png"
+  },
+  {
+    "id": "reel-maceio",
+    "type": "reel",
+    "caption": "Maceió só entrega o que promete se você for na maré certa.\n\nRoteiro completo de Maceió — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/06_maceio.mp4",
+    "cover": "content/capas_reels/06_maceio_capa_reel.png"
+  },
+  {
+    "id": "reel-aracaju",
+    "type": "reel",
+    "caption": "Aracaju não está na lista de ninguém — e talvez seja exatamente por isso que vale a pena.\n\nRoteiro completo de Aracaju — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/07_aracaju.mp4",
+    "cover": "content/capas_reels/07_aracaju_capa_reel.png"
+  },
+  {
+    "id": "reel-saoluis",
+    "type": "reel",
+    "caption": "São Luís tem azulejo português e som de reggae em quase toda esquina — e quase ninguém coloca no roteiro.\n\nRoteiro completo de São Luís — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/08_saoluis.mp4",
+    "cover": "content/capas_reels/08_saoluis_capa_reel.png"
+  },
+  {
+    "id": "reel-teresina",
+    "type": "reel",
+    "caption": "Teresina não tem praia — tem o encontro de dois rios e um pôr do sol de tirar o fôlego.\n\nRoteiro completo de Teresina — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/reels/09_teresina.mp4",
+    "cover": "content/capas_reels/09_teresina_capa_reel.png"
+  },
+  {
+    "id": "roteiro-personalizado-2",
+    "type": "carousel",
+    "caption": "Qualquer lugar do mundo, do seu jeito. Roteiro personalizado, pronto na hora, por R$49,90. Link na bio.\n\n#nomandly #roteiropersonalizado #viagem",
+    "files": [
+      "content/roteiro_personalizado/01_hero.png",
+      "content/roteiro_personalizado/02_como_funciona.png",
+      "content/roteiro_personalizado/03_qualquer_lugar.png",
+      "content/roteiro_personalizado/04_cta.png"
+    ]
+  },
+  {
+    "id": "single-salvador",
+    "type": "single",
+    "caption": "Salvador tem dois roteiros: o que todo blog copia e o que quem mora aqui realmente segue.\n\nRoteiro completo de Salvador — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/01_salvador.png"
+  },
+  {
+    "id": "single-recife",
+    "type": "single",
+    "caption": "Recife dá pra fazer inteiro num feriado — desde que você não perca meio dia decidindo por onde começar.\n\nRoteiro completo de Recife — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/02_recife.png"
+  },
+  {
+    "id": "single-fortaleza",
+    "type": "single",
+    "caption": "Fortaleza tem fama de cara, mas boa parte do melhor passeio é de graça — só precisa saber qual.\n\nRoteiro completo de Fortaleza — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/03_fortaleza.png"
+  },
+  {
+    "id": "single-natal",
+    "type": "single",
+    "caption": "Em Natal, quem não sabe o preço certo do buggy paga o dobro.\n\nRoteiro completo de Natal — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/04_natal.png"
+  },
+  {
+    "id": "single-joaopessoa",
+    "type": "single",
+    "caption": "João Pessoa é o segredo mais bem guardado do Nordeste — verde, tranquila e única.\n\nRoteiro completo de João Pessoa — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/05_joaopessoa.png"
+  },
+  {
+    "id": "single-maceio",
+    "type": "single",
+    "caption": "Maceió só entrega o que promete se você for na maré certa.\n\nRoteiro completo de Maceió — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/06_maceio.png"
+  },
+  {
+    "id": "single-aracaju",
+    "type": "single",
+    "caption": "Aracaju não está na lista de ninguém — e talvez seja exatamente por isso que vale a pena.\n\nRoteiro completo de Aracaju — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/07_aracaju.png"
+  },
+  {
+    "id": "single-saoluis",
+    "type": "single",
+    "caption": "São Luís tem azulejo português e som de reggae em quase toda esquina — e quase ninguém coloca no roteiro.\n\nRoteiro completo de São Luís — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/08_saoluis.png"
+  },
+  {
+    "id": "single-teresina",
+    "type": "single",
+    "caption": "Teresina não tem praia — tem o encontro de dois rios e um pôr do sol de tirar o fôlego.\n\nRoteiro completo de Teresina — R$5, pronto na hora. Link na bio.\n\n#nomandly #roteirodeviagem #nordeste #viagembarata",
+    "file": "content/feed/09_teresina.png"
+  },
+  {
+    "id": "roteiro-personalizado-3",
+    "type": "carousel",
+    "caption": "Qualquer lugar do mundo, do seu jeito. Roteiro personalizado, pronto na hora, por R$49,90. Link na bio.\n\n#nomandly #roteiropersonalizado #viagem",
+    "files": [
+      "content/roteiro_personalizado/01_hero.png",
+      "content/roteiro_personalizado/02_como_funciona.png",
+      "content/roteiro_personalizado/03_qualquer_lugar.png",
+      "content/roteiro_personalizado/04_cta.png"
+    ]
+  }
+]

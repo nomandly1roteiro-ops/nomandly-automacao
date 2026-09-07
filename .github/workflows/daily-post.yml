@@ -1,0 +1,52 @@
+name: Post diário no Instagram (@nomandly_)
+
+on:
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Rodar em modo teste (não publica nada de verdade)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nomandly-daily-post
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Publicar próximo post da fila
+        env:
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_LONG_LIVED_TOKEN: ${{ secrets.IG_LONG_LIVED_TOKEN }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: node scripts/publish.js
+
+      - name: Salvar avanço da fila (state.json)
+        run: |
+          if ! git diff --quiet -- state.json; then
+            git config user.name "nomandly-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add state.json
+            git commit -m "chore: avança fila de posts [skip ci]"
+            git push
+          else
+            echo "state.json sem alteração (provavelmente DRY_RUN) — nada a commitar."
+          fi
