@@ -141,11 +141,54 @@ async function waitVideoReady(creationId, { timeoutMs = 5 * 60 * 1000, intervalM
 
 const igId = () => required('IG_BUSINESS_ACCOUNT_ID', IG_BUSINESS_ACCOUNT_ID);
 
+// ------------------------------------------------------------------
+// Stories — replica cada imagem (ou o vídeo do reel) como Story, reusando
+// as URLs já hospedadas no Cloudinary durante a publicação principal (sem
+// subir a mídia de novo). Uma falha aqui nunca derruba o post principal,
+// que já foi publicado com sucesso quando isto roda.
+// ------------------------------------------------------------------
+async function publishImageStory(imageUrl) {
+  const container = await graphPost(`${igId()}/media`, {
+    image_url: imageUrl,
+    media_type: 'STORIES',
+  });
+  return graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+}
+
+async function publishVideoStory(videoUrl) {
+  const container = await graphPost(`${igId()}/media`, {
+    video_url: videoUrl,
+    media_type: 'STORIES',
+  });
+  await waitVideoReady(container.id);
+  return graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+}
+
+async function publishStories({ imageUrls = [], videoUrl } = {}) {
+  for (const url of imageUrls) {
+    try {
+      await publishImageStory(url);
+      await sleep(2000); // respiro entre stories pra não estourar rate limit
+    } catch (err) {
+      console.error('Aviso: falha ao publicar 1 story (post principal não foi afetado):', err.message || err);
+    }
+  }
+  if (videoUrl) {
+    try {
+      await publishVideoStory(videoUrl);
+    } catch (err) {
+      console.error('Aviso: falha ao publicar o story do vídeo (post principal não foi afetado):', err.message || err);
+    }
+  }
+}
+
 async function publishCarousel(post) {
   const childIds = [];
+  const imageUrls = [];
   for (const relPath of post.files) {
     const localPath = path.join(ROOT, relPath);
     const imageUrl = await cloudinaryUpload(localPath, 'image');
+    imageUrls.push(imageUrl);
     const container = await graphPost(`${igId()}/media`, {
       image_url: imageUrl,
       is_carousel_item: 'true',
@@ -157,7 +200,8 @@ async function publishCarousel(post) {
     children: childIds.join(','),
     caption: post.caption,
   });
-  return graphPost(`${igId()}/media_publish`, { creation_id: carousel.id });
+  const result = await graphPost(`${igId()}/media_publish`, { creation_id: carousel.id });
+  return { result, imageUrls };
 }
 
 async function publishReel(post) {
@@ -170,7 +214,8 @@ async function publishReel(post) {
     caption: post.caption,
   });
   await waitVideoReady(container.id);
-  return graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+  const result = await graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+  return { result, videoUrl };
 }
 
 async function publishSingle(post) {
@@ -179,7 +224,8 @@ async function publishSingle(post) {
     image_url: imageUrl,
     caption: post.caption,
   });
-  return graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+  const result = await graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+  return { result, imageUrls: [imageUrl] };
 }
 
 async function main() {
@@ -196,13 +242,18 @@ async function main() {
     return;
   }
 
-  let result;
-  if (post.type === 'carousel') result = await publishCarousel(post);
-  else if (post.type === 'reel') result = await publishReel(post);
-  else if (post.type === 'single') result = await publishSingle(post);
+  let outcome;
+  if (post.type === 'carousel') outcome = await publishCarousel(post);
+  else if (post.type === 'reel') outcome = await publishReel(post);
+  else if (post.type === 'single') outcome = await publishSingle(post);
   else throw new Error(`Tipo de post desconhecido: ${post.type}`);
 
+  const { result, imageUrls, videoUrl } = outcome;
   console.log('Publicado com sucesso:', JSON.stringify(result));
+
+  console.log('Replicando cada página como Story...');
+  await publishStories({ imageUrls, videoUrl });
+  console.log('Stories publicados.');
 
   state.nextIndex = index + 1;
   state.history = state.history || [];
