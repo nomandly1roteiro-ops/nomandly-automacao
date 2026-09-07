@@ -56,7 +56,13 @@ async function cloudinaryUpload(localPath, resourceType) {
 
   const timestamp = Math.floor(Date.now() / 1000);
   const folder = 'nomandly-automacao';
-  const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;
+  // A Instagram Graph API só aceita JPEG pra fotos (PNG é recusado com
+  // "Only photo or video can be accepted as media type") — convertemos na
+  // hora do upload pro Cloudinary, sem precisar reexportar nada localmente.
+  const convertToJpg = resourceType === 'image';
+  const paramsToSign = convertToJpg
+    ? `folder=${folder}&format=jpg&timestamp=${timestamp}`
+    : `folder=${folder}&timestamp=${timestamp}`;
   const signature = crypto
     .createHash('sha1')
     .update(paramsToSign + CLOUDINARY_API_SECRET)
@@ -69,6 +75,7 @@ async function cloudinaryUpload(localPath, resourceType) {
   form.append('api_key', CLOUDINARY_API_KEY);
   form.append('timestamp', String(timestamp));
   form.append('folder', folder);
+  if (convertToJpg) form.append('format', 'jpg');
   form.append('signature', signature);
 
   const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
