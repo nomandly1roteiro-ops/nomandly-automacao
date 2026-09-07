@@ -9,8 +9,10 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const { buildStoryImage } = require('./lib/storyImage');
 
 const ROOT = path.join(__dirname, '..');
 const QUEUE_PATH = path.join(__dirname, 'queue.json');
@@ -142,17 +144,60 @@ async function waitVideoReady(creationId, { timeoutMs = 5 * 60 * 1000, intervalM
 const igId = () => required('IG_BUSINESS_ACCOUNT_ID', IG_BUSINESS_ACCOUNT_ID);
 
 // ------------------------------------------------------------------
-// Stories — replica cada imagem (ou o vídeo do reel) como Story, reusando
-// as URLs já hospedadas no Cloudinary durante a publicação principal (sem
-// subir a mídia de novo). Uma falha aqui nunca derruba o post principal,
-// que já foi publicado com sucesso quando isto roda.
+// Stories — replica cada imagem (ou o vídeo do reel) como Story.
+//
+// IMPORTANTE: o Instagram exige proporção 9:16 (1080x1920) pra Stories.
+// As imagens do feed são 4:5 (1080x1350) — se mandarmos a URL do feed
+// direto, o Instagram faz o próprio corte/zoom automático pra preencher
+// a tela, e o resultado sai cortado e ilegível. Por isso cada imagem de
+// story é recomposta localmente (scripts/lib/storyImage.js) num quadro
+// 1080x1920 com a imagem inteira visível, e só essa versão é enviada.
+// Vídeo (reel) não passa por esse recorte local — em vez disso pedimos
+// pro Cloudinary preencher com barras pretas (sem cortar nem distorcer).
+//
+// Uma falha aqui nunca derruba o post principal, que já foi publicado
+// com sucesso quando isto roda.
 // ------------------------------------------------------------------
+function toStoryVideoUrl(videoUrl) {
+  return videoUrl.replace('/video/upload/', '/video/upload/c_pad,b_black,w_1080,h_1920/');
+}
+
+async function uploadStoryImageFromLocal(localPath) {
+  const tmpOut = path.join(os.tmpdir(), `story-${path.basename(localPath, path.extname(localPath))}-${Date.now()}.jpg`);
+  await buildStoryImage(localPath, tmpOut);
+  try {
+    return await cloudinaryUpload(tmpOut, 'image');
+  } finally {
+    fs.unlink(tmpOut, () => {});
+  }
+}
+
+// Às vezes o Instagram ainda não terminou de "puxar" a mídia da URL quando
+// tentamos publicar logo em seguida (mesmo pra imagem) — a API responde
+// "Media ID is not available" (subcode 2207027). Não é um erro de verdade,
+// é só cedo demais: espera um pouco e tenta de novo antes de desistir.
+async function publishContainerWithRetry(creationId, { attempts = 6, delayMs = 3000 } = {}) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await graphPost(`${igId()}/media_publish`, { creation_id: creationId });
+    } catch (err) {
+      const notReadyYet = /2207027|Media ID is not available/i.test(err.message || '');
+      if (notReadyYet && attempt < attempts) {
+        await sleep(delayMs);
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 async function publishImageStory(imageUrl) {
   const container = await graphPost(`${igId()}/media`, {
     image_url: imageUrl,
     media_type: 'STORIES',
   });
-  return graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+  await sleep(1500); // dá um tempo pro Instagram buscar a imagem antes de publicar
+  return publishContainerWithRetry(container.id);
 }
 
 async function publishVideoStory(videoUrl) {
@@ -161,7 +206,7 @@ async function publishVideoStory(videoUrl) {
     media_type: 'STORIES',
   });
   await waitVideoReady(container.id);
-  return graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+  return publishContainerWithRetry(container.id);
 }
 
 async function publishStories({ imageUrls = [], videoUrl } = {}) {
@@ -184,16 +229,17 @@ async function publishStories({ imageUrls = [], videoUrl } = {}) {
 
 async function publishCarousel(post) {
   const childIds = [];
-  const imageUrls = [];
+  const storyImageUrls = [];
   for (const relPath of post.files) {
     const localPath = path.join(ROOT, relPath);
     const imageUrl = await cloudinaryUpload(localPath, 'image');
-    imageUrls.push(imageUrl);
     const container = await graphPost(`${igId()}/media`, {
       image_url: imageUrl,
       is_carousel_item: 'true',
     });
     childIds.push(container.id);
+    // versão 9:16 (recomposta), só usada pro story — nunca pro post do feed.
+    storyImageUrls.push(await uploadStoryImageFromLocal(localPath));
   }
   const carousel = await graphPost(`${igId()}/media`, {
     media_type: 'CAROUSEL',
@@ -201,7 +247,7 @@ async function publishCarousel(post) {
     caption: post.caption,
   });
   const result = await graphPost(`${igId()}/media_publish`, { creation_id: carousel.id });
-  return { result, imageUrls };
+  return { result, imageUrls: storyImageUrls };
 }
 
 async function publishReel(post) {
@@ -215,17 +261,21 @@ async function publishReel(post) {
   });
   await waitVideoReady(container.id);
   const result = await graphPost(`${igId()}/media_publish`, { creation_id: container.id });
-  return { result, videoUrl };
+  // versão com barras pretas 9:16, só usada pro story (sem cortar/distorcer o vídeo).
+  return { result, videoUrl: toStoryVideoUrl(videoUrl) };
 }
 
 async function publishSingle(post) {
-  const imageUrl = await cloudinaryUpload(path.join(ROOT, post.file), 'image');
+  const localPath = path.join(ROOT, post.file);
+  const imageUrl = await cloudinaryUpload(localPath, 'image');
   const container = await graphPost(`${igId()}/media`, {
     image_url: imageUrl,
     caption: post.caption,
   });
   const result = await graphPost(`${igId()}/media_publish`, { creation_id: container.id });
-  return { result, imageUrls: [imageUrl] };
+  // versão 9:16 (recomposta), só usada pro story — nunca pro post do feed.
+  const storyImageUrl = await uploadStoryImageFromLocal(localPath);
+  return { result, imageUrls: [storyImageUrl] };
 }
 
 async function main() {

@@ -7,6 +7,9 @@
     "publish": "node scripts/publish.js",
     "build-queue": "node scripts/build_queue.js"
   },
+  "dependencies": {
+    "jimp": "^0.22.12"
+  },
   "engines": {
     "node": ">=20"
   }
