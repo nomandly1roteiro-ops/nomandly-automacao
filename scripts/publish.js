@@ -48,6 +48,103 @@ function saveState(state) {
   fs.writeFileSync(STATE_PATH, JSON.stringify(state, null, 2) + '\n');
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ------------------------------------------------------------------
+// Resiliência — dois níveis de "tenta de novo":
+//
+// 1) withNetworkRetry: só pega falha de CONEXÃO (queda de rede, timeout,
+//    DNS) na hora de chamar fetch(). É rápido e curto — se a internet
+//    piscou, tenta de novo em poucos segundos.
+//
+// 2) withTransientRetry: pega erros de RESPOSTA das APIs (Graph API do
+//    Instagram, Cloudinary) que parecem passageiros — por exemplo o
+//    Instagram tentando baixar uma imagem do Cloudinary bem no instante
+//    em que ela ainda não terminou de propagar (erro "Falha ao baixar
+//    mídia" / subcode 2207052, o que causou a falha de 08/09) ou o post
+//    ainda não estar pronto pro Instagram enxergar (subcode 2207027).
+//    Erros desconhecidos/novos também ganham 1 tentativa extra de
+//    segurança, sem insistir tanto quanto os já conhecidos — assim a
+//    automação aguenta um imprevisto sem mascarar um bug de verdade.
+// ------------------------------------------------------------------
+function isNetworkError(err) {
+  const msg = (err && err.message) || String(err);
+  return /ECONNRESET|ETIMEDOUT|ECONNREFUSED|EAI_AGAIN|ENOTFOUND|EPIPE|fetch failed|network|socket hang up/i.test(
+    msg
+  );
+}
+
+async function withNetworkRetry(fn, { attempts = 3, delayMs = 1500, label = 'chamada de rede' } = {}) {
+  let lastErr;
+  let wait = delayMs;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (!isNetworkError(err) || attempt === attempts) throw err;
+      console.error(
+        `Aviso: queda de rede em "${label}" (tentativa ${attempt}/${attempts}): ${err.message}. Tentando de novo em ${wait}ms...`
+      );
+      await sleep(wait);
+      wait *= 2;
+    }
+  }
+  throw lastErr;
+}
+
+function isKnownTransientGraphError(err) {
+  const msg = (err && err.message) || '';
+  return /2207027|2207052|Media ID is not available|Falha ao baixar m[íi]dia|"is_transient"\s*:\s*true/i.test(
+    msg
+  );
+}
+
+// Erros que são bug de configuração, não falha passageira — insistir só
+// atrasa o job pra dar o mesmo erro de novo no final.
+const PERMANENT_ERROR_PATTERNS = [
+  /Variável de ambiente obrigatória faltando/i,
+  /Tipo de post desconhecido/i,
+  /Invalid OAuth access token|Session has expired|Error validating access token/i,
+];
+
+function isPermanentError(err) {
+  const msg = (err && err.message) || String(err);
+  return PERMANENT_ERROR_PATTERNS.some((re) => re.test(msg));
+}
+
+async function withTransientRetry(fn, { attempts = 5, delayMs = 3000, label = 'operação' } = {}) {
+  let lastErr;
+  let wait = delayMs;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (isPermanentError(err)) throw err;
+
+      const knownTransient = isKnownTransientGraphError(err);
+      const isLastAttempt = attempt === attempts;
+      // Erro conhecido: usa todas as tentativas configuradas.
+      // Erro novo/desconhecido: só 1 tentativa extra de segurança (não
+      // fica insistindo indefinidamente em algo que pode ser um bug real).
+      const stillWorthRetrying = knownTransient ? !isLastAttempt : attempt < 2;
+      if (!stillWorthRetrying) throw err;
+
+      console.error(
+        `Aviso: "${label}" falhou (tentativa ${attempt}${knownTransient ? '' : ', erro não reconhecido'}): ${
+          err.message || err
+        }. Tentando de novo em ${wait}ms...`
+      );
+      await sleep(wait);
+      wait = Math.round(wait * 1.5);
+    }
+  }
+  throw lastErr;
+}
+
 // ------------------------------------------------------------------
 // Cloudinary — upload assinado (imagem ou vídeo) e retorno da URL pública.
 // ------------------------------------------------------------------
@@ -56,37 +153,43 @@ async function cloudinaryUpload(localPath, resourceType) {
   required('CLOUDINARY_API_KEY', CLOUDINARY_API_KEY);
   required('CLOUDINARY_API_SECRET', CLOUDINARY_API_SECRET);
 
-  const timestamp = Math.floor(Date.now() / 1000);
-  const folder = 'nomandly-automacao';
-  // A Instagram Graph API só aceita JPEG pra fotos (PNG é recusado com
-  // "Only photo or video can be accepted as media type") — convertemos na
-  // hora do upload pro Cloudinary, sem precisar reexportar nada localmente.
-  const convertToJpg = resourceType === 'image';
-  const paramsToSign = convertToJpg
-    ? `folder=${folder}&format=jpg&timestamp=${timestamp}`
-    : `folder=${folder}&timestamp=${timestamp}`;
-  const signature = crypto
-    .createHash('sha1')
-    .update(paramsToSign + CLOUDINARY_API_SECRET)
-    .digest('hex');
-
-  const form = new FormData();
-  const fileBuffer = fs.readFileSync(localPath);
   const fileName = path.basename(localPath);
-  form.append('file', new Blob([fileBuffer]), fileName);
-  form.append('api_key', CLOUDINARY_API_KEY);
-  form.append('timestamp', String(timestamp));
-  form.append('folder', folder);
-  if (convertToJpg) form.append('format', 'jpg');
-  form.append('signature', signature);
 
-  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
-  const res = await fetch(url, { method: 'POST', body: form });
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error(`Cloudinary upload falhou (${fileName}): ${JSON.stringify(json)}`);
-  }
-  return json.secure_url;
+  return withNetworkRetry(
+    async () => {
+      const timestamp = Math.floor(Date.now() / 1000);
+      const folder = 'nomandly-automacao';
+      // A Instagram Graph API só aceita JPEG pra fotos (PNG é recusado com
+      // "Only photo or video can be accepted as media type") — convertemos na
+      // hora do upload pro Cloudinary, sem precisar reexportar nada localmente.
+      const convertToJpg = resourceType === 'image';
+      const paramsToSign = convertToJpg
+        ? `folder=${folder}&format=jpg&timestamp=${timestamp}`
+        : `folder=${folder}&timestamp=${timestamp}`;
+      const signature = crypto
+        .createHash('sha1')
+        .update(paramsToSign + CLOUDINARY_API_SECRET)
+        .digest('hex');
+
+      const form = new FormData();
+      const fileBuffer = fs.readFileSync(localPath);
+      form.append('file', new Blob([fileBuffer]), fileName);
+      form.append('api_key', CLOUDINARY_API_KEY);
+      form.append('timestamp', String(timestamp));
+      form.append('folder', folder);
+      if (convertToJpg) form.append('format', 'jpg');
+      form.append('signature', signature);
+
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+      const res = await fetch(url, { method: 'POST', body: form });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(`Cloudinary upload falhou (${fileName}): HTTP ${res.status} — ${JSON.stringify(json)}`);
+      }
+      return json.secure_url;
+    },
+    { label: `upload Cloudinary (${fileName})` }
+  );
 }
 
 // ------------------------------------------------------------------
@@ -95,37 +198,52 @@ async function cloudinaryUpload(localPath, resourceType) {
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 async function graphPost(edge, params) {
-  const url = new URL(`${GRAPH_BASE}/${edge}`);
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null) url.searchParams.set(k, v);
-  });
-  url.searchParams.set('access_token', required('IG_LONG_LIVED_TOKEN', IG_LONG_LIVED_TOKEN));
+  return withNetworkRetry(
+    async () => {
+      const url = new URL(`${GRAPH_BASE}/${edge}`);
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) url.searchParams.set(k, v);
+      });
+      url.searchParams.set('access_token', required('IG_LONG_LIVED_TOKEN', IG_LONG_LIVED_TOKEN));
 
-  const res = await fetch(url, { method: 'POST' });
-  const json = await res.json();
-  if (!res.ok || json.error) {
-    throw new Error(`Graph API erro em ${edge}: ${JSON.stringify(json)}`);
-  }
-  return json;
+      const res = await fetch(url, { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(`Graph API erro em ${edge}: ${JSON.stringify(json)}`);
+      }
+      return json;
+    },
+    { label: `Graph API POST ${edge}` }
+  );
 }
 
 async function graphGet(edge, params = {}) {
-  const url = new URL(`${GRAPH_BASE}/${edge}`);
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null) url.searchParams.set(k, v);
-  });
-  url.searchParams.set('access_token', required('IG_LONG_LIVED_TOKEN', IG_LONG_LIVED_TOKEN));
+  return withNetworkRetry(
+    async () => {
+      const url = new URL(`${GRAPH_BASE}/${edge}`);
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) url.searchParams.set(k, v);
+      });
+      url.searchParams.set('access_token', required('IG_LONG_LIVED_TOKEN', IG_LONG_LIVED_TOKEN));
 
-  const res = await fetch(url);
-  const json = await res.json();
-  if (!res.ok || json.error) {
-    throw new Error(`Graph API erro em GET ${edge}: ${JSON.stringify(json)}`);
-  }
-  return json;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(`Graph API erro em GET ${edge}: ${JSON.stringify(json)}`);
+      }
+      return json;
+    },
+    { label: `Graph API GET ${edge}` }
+  );
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// Cria um container de mídia (imagem ou item de carrossel) e tenta de novo
+// se o Instagram falhar ao "baixar" a mídia do Cloudinary — na prática,
+// isso acontece quando a chamada acontece cedo demais, antes da imagem
+// terminar de propagar pra todos os pontos de entrega do Cloudinary logo
+// após o upload (foi exatamente o que travou o post de 08/09/2026).
+async function createMediaContainer(params, { label = 'criar container de mídia' } = {}) {
+  return withTransientRetry(() => graphPost(`${igId()}/media`, params), { label });
 }
 
 async function waitVideoReady(creationId, { timeoutMs = 5 * 60 * 1000, intervalMs = 10000 } = {}) {
@@ -176,35 +294,29 @@ async function uploadStoryImageFromLocal(localPath) {
 // tentamos publicar logo em seguida (mesmo pra imagem) — a API responde
 // "Media ID is not available" (subcode 2207027). Não é um erro de verdade,
 // é só cedo demais: espera um pouco e tenta de novo antes de desistir.
-async function publishContainerWithRetry(creationId, { attempts = 6, delayMs = 3000 } = {}) {
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      return await graphPost(`${igId()}/media_publish`, { creation_id: creationId });
-    } catch (err) {
-      const notReadyYet = /2207027|Media ID is not available/i.test(err.message || '');
-      if (notReadyYet && attempt < attempts) {
-        await sleep(delayMs);
-        continue;
-      }
-      throw err;
-    }
-  }
+async function publishContainerWithRetry(creationId, opts = {}) {
+  return withTransientRetry(() => graphPost(`${igId()}/media_publish`, { creation_id: creationId }), {
+    label: 'publicar mídia (media_publish)',
+    attempts: 6,
+    delayMs: 3000,
+    ...opts,
+  });
 }
 
 async function publishImageStory(imageUrl) {
-  const container = await graphPost(`${igId()}/media`, {
-    image_url: imageUrl,
-    media_type: 'STORIES',
-  });
+  const container = await createMediaContainer(
+    { image_url: imageUrl, media_type: 'STORIES' },
+    { label: 'criar container de story (imagem)' }
+  );
   await sleep(1500); // dá um tempo pro Instagram buscar a imagem antes de publicar
   return publishContainerWithRetry(container.id);
 }
 
 async function publishVideoStory(videoUrl) {
-  const container = await graphPost(`${igId()}/media`, {
-    video_url: videoUrl,
-    media_type: 'STORIES',
-  });
+  const container = await createMediaContainer(
+    { video_url: videoUrl, media_type: 'STORIES' },
+    { label: 'criar container de story (vídeo)' }
+  );
   await waitVideoReady(container.id);
   return publishContainerWithRetry(container.id);
 }
@@ -227,40 +339,47 @@ async function publishStories({ imageUrls = [], videoUrl } = {}) {
   }
 }
 
+// Espera de segurança entre "acabei de subir a imagem pro Cloudinary" e
+// "mandei o Instagram ir buscar essa mesma URL" — dá tempo da imagem
+// propagar pra todos os pontos de entrega do Cloudinary antes do Instagram
+// tentar baixá-la. Some com o createMediaContainer (que já tenta de novo
+// se mesmo assim vier cedo demais) pra cobrir o caso raiz do incidente de
+// 08/09/2026 (post do Recife travou bem nesse ponto).
+const CLOUDINARY_PROPAGATION_DELAY_MS = 1500;
+
 async function publishCarousel(post) {
   const childIds = [];
   const storyImageUrls = [];
   for (const relPath of post.files) {
     const localPath = path.join(ROOT, relPath);
     const imageUrl = await cloudinaryUpload(localPath, 'image');
-    const container = await graphPost(`${igId()}/media`, {
-      image_url: imageUrl,
-      is_carousel_item: 'true',
-    });
+    await sleep(CLOUDINARY_PROPAGATION_DELAY_MS);
+    const container = await createMediaContainer(
+      { image_url: imageUrl, is_carousel_item: 'true' },
+      { label: `criar item do carrossel (${path.basename(relPath)})` }
+    );
     childIds.push(container.id);
     // versão 9:16 (recomposta), só usada pro story — nunca pro post do feed.
     storyImageUrls.push(await uploadStoryImageFromLocal(localPath));
   }
-  const carousel = await graphPost(`${igId()}/media`, {
-    media_type: 'CAROUSEL',
-    children: childIds.join(','),
-    caption: post.caption,
-  });
-  const result = await graphPost(`${igId()}/media_publish`, { creation_id: carousel.id });
+  const carousel = await createMediaContainer(
+    { media_type: 'CAROUSEL', children: childIds.join(','), caption: post.caption },
+    { label: 'criar container do carrossel' }
+  );
+  const result = await publishContainerWithRetry(carousel.id);
   return { result, imageUrls: storyImageUrls };
 }
 
 async function publishReel(post) {
   const videoUrl = await cloudinaryUpload(path.join(ROOT, post.file), 'video');
   const coverUrl = post.cover ? await cloudinaryUpload(path.join(ROOT, post.cover), 'image') : undefined;
-  const container = await graphPost(`${igId()}/media`, {
-    media_type: 'REELS',
-    video_url: videoUrl,
-    cover_url: coverUrl,
-    caption: post.caption,
-  });
+  await sleep(CLOUDINARY_PROPAGATION_DELAY_MS);
+  const container = await createMediaContainer(
+    { media_type: 'REELS', video_url: videoUrl, cover_url: coverUrl, caption: post.caption },
+    { label: 'criar container do reel' }
+  );
   await waitVideoReady(container.id);
-  const result = await graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+  const result = await publishContainerWithRetry(container.id);
   // versão com barras pretas 9:16, só usada pro story (sem cortar/distorcer o vídeo).
   return { result, videoUrl: toStoryVideoUrl(videoUrl) };
 }
@@ -268,11 +387,12 @@ async function publishReel(post) {
 async function publishSingle(post) {
   const localPath = path.join(ROOT, post.file);
   const imageUrl = await cloudinaryUpload(localPath, 'image');
-  const container = await graphPost(`${igId()}/media`, {
-    image_url: imageUrl,
-    caption: post.caption,
-  });
-  const result = await graphPost(`${igId()}/media_publish`, { creation_id: container.id });
+  await sleep(CLOUDINARY_PROPAGATION_DELAY_MS);
+  const container = await createMediaContainer(
+    { image_url: imageUrl, caption: post.caption },
+    { label: 'criar container do post único' }
+  );
+  const result = await publishContainerWithRetry(container.id);
   // versão 9:16 (recomposta), só usada pro story — nunca pro post do feed.
   const storyImageUrl = await uploadStoryImageFromLocal(localPath);
   return { result, imageUrls: [storyImageUrl] };
