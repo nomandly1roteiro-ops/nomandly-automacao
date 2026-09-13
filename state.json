@@ -1,5 +1,5 @@
 {
-  "nextIndex": 5,
+  "nextIndex": 6,
   "history": [
     {
       "id": "carousel-salvador",
@@ -26,6 +26,11 @@
       "id": "carousel-joaopessoa",
       "publishedAt": "2026-09-12T11:15:12.819Z",
       "mediaId": "18009770273959449"
+    },
+    {
+      "id": "carousel-maceio",
+      "publishedAt": "2026-09-13T11:16:01.795Z",
+      "mediaId": "17956034034226686"
     }
   ]
 }
