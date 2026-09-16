@@ -1,5 +1,5 @@
 {
-  "nextIndex": 8,
+  "nextIndex": 9,
   "history": [
     {
       "id": "carousel-salvador",
@@ -41,6 +41,11 @@
       "id": "carousel-saoluis",
       "publishedAt": "2026-09-15T11:16:39.162Z",
       "mediaId": "18133667530654647"
+    },
+    {
+      "id": "carousel-teresina",
+      "publishedAt": "2026-09-16T11:17:21.806Z",
+      "mediaId": "18115488176048290"
     }
   ]
 }
