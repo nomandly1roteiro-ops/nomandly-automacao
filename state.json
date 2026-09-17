@@ -1,5 +1,5 @@
 {
-  "nextIndex": 9,
+  "nextIndex": 10,
   "history": [
     {
       "id": "carousel-salvador",
@@ -46,6 +46,11 @@
       "id": "carousel-teresina",
       "publishedAt": "2026-09-16T11:17:21.806Z",
       "mediaId": "18115488176048290"
+    },
+    {
+      "id": "roteiro-personalizado-1",
+      "publishedAt": "2026-09-17T11:17:17.198Z",
+      "mediaId": "17904594285590623"
     }
   ]
 }
