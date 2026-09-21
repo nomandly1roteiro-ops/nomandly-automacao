@@ -398,32 +398,96 @@ async function publishSingle(post) {
   return { result, imageUrls: [storyImageUrl] };
 }
 
+// Quantas tentativas reais de publicação por execução (cada uma pode ser um
+// item diferente da fila). Evita insistir num item quebrado e travar a fila.
+const MAX_REAL_ATTEMPTS = 3;
+const ALERT_PATH = path.join(ROOT, 'alert.md');
+
+async function publishPost(post) {
+  if (post.type === 'carousel') return publishCarousel(post);
+  if (post.type === 'reel') return publishReel(post);
+  if (post.type === 'single') return publishSingle(post);
+  throw new Error(`Tipo de post desconhecido: ${post.type}`);
+}
+
+// alert.md é lido pelo workflow, que abre uma issue no repositório (o GitHub
+// avisa por e-mail). Não é commitado: o workflow só faz git add do state.json.
+function writeAlert(title, lines) {
+  const body = [`## ${title}`, '', ...lines, '', 'cc @nomandly1roteiro-ops'].join('\n');
+  fs.writeFileSync(ALERT_PATH, body + '\n');
+}
+
 async function main() {
   const queue = loadQueue();
   const state = loadState();
-  const index = state.nextIndex % queue.length;
-  const post = queue[index];
-
-  console.log(`Publicando post ${index + 1}/${queue.length}: ${post.id} (${post.type})`);
+  const startIndex = state.nextIndex % queue.length;
 
   if (DRY_RUN === 'true') {
+    const post = queue[startIndex];
+    console.log(`Publicando post ${startIndex + 1}/${queue.length}: ${post.id} (${post.type})`);
     console.log('DRY_RUN ativo — nada será enviado ao Instagram. Post que seria publicado:');
     console.log(JSON.stringify(post, null, 2));
     return;
   }
 
-  let outcome;
-  if (post.type === 'carousel') outcome = await publishCarousel(post);
-  else if (post.type === 'reel') outcome = await publishReel(post);
-  else if (post.type === 'single') outcome = await publishSingle(post);
-  else throw new Error(`Tipo de post desconhecido: ${post.type}`);
+  const failures = [];
+  const failedTypes = new Set();
+  let chosen = null;
+  let outcome = null;
+  let attempts = 0;
 
+  for (let step = 0; step < queue.length && attempts < MAX_REAL_ATTEMPTS; step++) {
+    const index = (startIndex + step) % queue.length;
+    const post = queue[index];
+
+    // Se um Reel falhou hoje, não adianta tentar os outros Reels: pula pro
+    // próximo item de outro tipo.
+    if (failedTypes.has(post.type)) {
+      console.log(`Pulando ${post.id}: o tipo "${post.type}" já falhou nesta execução.`);
+      continue;
+    }
+
+    attempts++;
+    console.log(`Publicando post ${index + 1}/${queue.length}: ${post.id} (${post.type})`);
+    try {
+      outcome = await publishPost(post);
+      chosen = { post, index };
+      break;
+    } catch (err) {
+      // Token expirado / configuração faltando: pular item não resolve.
+      if (isPermanentError(err)) throw err;
+      const msg = (err && err.message) || String(err);
+      failures.push({ id: post.id, index, type: post.type, error: msg.slice(0, 400) });
+      failedTypes.add(post.type);
+      console.error(`::warning::Falha ao publicar ${post.id}: ${msg}`);
+    }
+  }
+
+  if (!chosen) {
+    writeAlert('Instagram: nenhum post foi publicado hoje', [
+      'Todas as tentativas desta execução falharam.',
+      '',
+      ...failures.map((f) => `- \`${f.id}\` (${f.type}): ${f.error}`),
+    ]);
+    throw new Error(
+      `Nenhum post publicado após ${attempts} tentativa(s): ` + failures.map((f) => f.id).join(', ')
+    );
+  }
+
+  const { post, index } = chosen;
   const { result, imageUrls, videoUrl } = outcome;
   console.log('Publicado com sucesso:', JSON.stringify(result));
 
   console.log('Replicando cada página como Story...');
   await publishStories({ imageUrls, videoUrl });
   console.log('Stories publicados.');
+
+  // Itens que ficaram para trás nesta volta da fila (falharam ou foram
+  // pulados por tipo). Ficam registrados em state.skipped para reenfileirar.
+  const passedOver = [];
+  for (let i = startIndex; i < index; i++) {
+    passedOver.push({ id: queue[i % queue.length].id, index: i % queue.length, at: new Date().toISOString() });
+  }
 
   state.nextIndex = index + 1;
   state.history = state.history || [];
@@ -434,10 +498,30 @@ async function main() {
   });
   // mantém só os últimos 60 registros de histórico
   state.history = state.history.slice(-60);
+  if (passedOver.length) {
+    state.skipped = (state.skipped || []).concat(passedOver).slice(-60);
+  }
   saveState(state);
+
+  if (failures.length) {
+    writeAlert('Instagram: um item da fila falhou e foi pulado', [
+      `Hoje foi publicado \`${post.id}\` no lugar do item que falhou.`,
+      '',
+      ...failures.map((f) => `- \`${f.id}\` (${f.type}): ${f.error}`),
+      '',
+      'Os itens pulados ficam listados em `state.skipped` no state.json.',
+    ]);
+  }
 }
 
 main().catch((err) => {
   console.error('Falha ao publicar:', err.message || err);
+  if (!fs.existsSync(ALERT_PATH)) {
+    try {
+      writeAlert('Instagram: falha na publicação diária', [String(err.message || err).slice(0, 800)]);
+    } catch (_) {
+      /* alerta é best-effort */
+    }
+  }
   process.exit(1);
 });
