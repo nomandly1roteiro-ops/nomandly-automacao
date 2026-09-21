@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: nomandly-daily-post
@@ -55,3 +56,15 @@ jobs:
           else
             echo "state.json sem alteração (provavelmente DRY_RUN) — nada a commitar."
           fi
+
+      # Roda mesmo quando o passo de publicar falha. O publish.js escreve o
+      # alert.md quando algo dá errado; a issue gera e-mail pro dono do repo.
+      - name: Abrir issue de alerta (se algo falhou)
+        if: always() && hashFiles('alert.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Instagram: alerta de publicação ($(date -u +%Y-%m-%d))" \
+            --body-file alert.md
