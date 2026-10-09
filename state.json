@@ -1,5 +1,5 @@
 {
-  "nextIndex": 10,
+  "nextIndex": 20,
   "history": [
     {
       "id": "carousel-salvador",
@@ -156,6 +156,11 @@
       "id": "roteiro-personalizado-1",
       "publishedAt": "2026-10-08T11:17:41.000Z",
       "mediaId": "17896133760411152"
+    },
+    {
+      "id": "roteiro-personalizado-2",
+      "publishedAt": "2026-10-09T17:25:31.964Z",
+      "mediaId": "18074582450756326"
     }
   ],
   "skipped": [
@@ -203,6 +208,51 @@
       "id": "reel-teresina",
       "index": 18,
       "at": "2026-09-21T00:33:22.752Z"
+    },
+    {
+      "id": "reel-salvador",
+      "index": 10,
+      "at": "2026-10-09T17:25:31.964Z"
+    },
+    {
+      "id": "reel-recife",
+      "index": 11,
+      "at": "2026-10-09T17:25:31.964Z"
+    },
+    {
+      "id": "reel-fortaleza",
+      "index": 12,
+      "at": "2026-10-09T17:25:31.964Z"
+    },
+    {
+      "id": "reel-natal",
+      "index": 13,
+      "at": "2026-10-09T17:25:31.964Z"
+    },
+    {
+      "id": "reel-joaopessoa",
+      "index": 14,
+      "at": "2026-10-09T17:25:31.964Z"
+    },
+    {
+      "id": "reel-maceio",
+      "index": 15,
+      "at": "2026-10-09T17:25:31.964Z"
+    },
+    {
+      "id": "reel-aracaju",
+      "index": 16,
+      "at": "2026-10-09T17:25:31.964Z"
+    },
+    {
+      "id": "reel-saoluis",
+      "index": 17,
+      "at": "2026-10-09T17:25:31.964Z"
+    },
+    {
+      "id": "reel-teresina",
+      "index": 18,
+      "at": "2026-10-09T17:25:31.964Z"
     }
   ]
 }
