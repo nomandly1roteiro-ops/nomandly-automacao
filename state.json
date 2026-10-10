@@ -1,5 +1,5 @@
 {
-  "nextIndex": 20,
+  "nextIndex": 21,
   "history": [
     {
       "id": "carousel-salvador",
@@ -161,6 +161,11 @@
       "id": "roteiro-personalizado-2",
       "publishedAt": "2026-10-09T17:25:31.964Z",
       "mediaId": "18074582450756326"
+    },
+    {
+      "id": "single-salvador",
+      "publishedAt": "2026-10-10T16:09:21.609Z",
+      "mediaId": "18058666442556018"
     }
   ],
   "skipped": [
