@@ -1,5 +1,5 @@
 {
-  "nextIndex": 21,
+  "nextIndex": 22,
   "history": [
     {
       "id": "carousel-salvador",
@@ -166,6 +166,11 @@
       "id": "single-salvador",
       "publishedAt": "2026-10-10T16:09:21.609Z",
       "mediaId": "18058666442556018"
+    },
+    {
+      "id": "single-recife",
+      "publishedAt": "2026-10-11T16:36:15.543Z",
+      "mediaId": "18142745326588313"
     }
   ],
   "skipped": [
