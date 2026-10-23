@@ -1,5 +1,5 @@
 {
-  "nextIndex": 3,
+  "nextIndex": 4,
   "history": [
     {
       "id": "carousel-salvador",
@@ -226,6 +226,11 @@
       "id": "carousel-fortaleza",
       "publishedAt": "2026-10-22T15:51:41.603Z",
       "mediaId": "17951971509279844"
+    },
+    {
+      "id": "carousel-natal",
+      "publishedAt": "2026-10-23T15:43:07.083Z",
+      "mediaId": "18123947080939976"
     }
   ],
   "skipped": [
