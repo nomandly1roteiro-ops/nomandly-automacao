@@ -1,5 +1,5 @@
 {
-  "nextIndex": 7,
+  "nextIndex": 8,
   "history": [
     {
       "id": "carousel-salvador",
@@ -246,6 +246,11 @@
       "id": "carousel-aracaju",
       "publishedAt": "2026-10-26T17:14:06.072Z",
       "mediaId": "18211041370365387"
+    },
+    {
+      "id": "carousel-saoluis",
+      "publishedAt": "2026-10-27T16:19:56.919Z",
+      "mediaId": "18637887919038847"
     }
   ],
   "skipped": [
